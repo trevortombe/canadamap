@@ -20,6 +20,10 @@ mapdata<-data.frame(id=ca@data[,1],centroids.df) %>%
   mutate(Latitude=ifelse(id=="Newfoundland and Labrador",54,Latitude)) %>%
   filter(!(id=="Ontario" & Latitude<50))
 
+# Merge in Data from the Spreadsheet
+supp_data<-read.csv("supp_data.csv")
+mapdata<-mapdata %>%
+  left_join(supp_data,by="id")
 
 ############################
 ### Plot provincial data ###
@@ -53,3 +57,26 @@ ggplot(plotdata,aes(map_id=id,fill=share)) +
 Graph by @trevortombe.")
 ggsave("plot.png",width=7,height=4,dpi=300)
 
+##################################
+# Just Provinces, No Territories #
+##################################
+plotdata<-mapdata %>%
+  left_join(subdata,by="id")%>%
+  filter(!(id %in% c("Northwest Territories","Yukon","Nunavut"))) %>%
+  filter(!is.na(share)) 
+ggplot(plotdata,aes(map_id=id,fill=transfers2020)) + 
+  geom_map(map=ca_map,color="white",show.legend = F) +
+  expand_limits(x=c(-119,-59),y=c(44,60))+
+  coord_map("lambert",0,85)+
+  #scale_fill_gradient2(low = "#c3d2e7",mid="#deebf7",high = "#396ab1",
+  #                     midpoint=0.11) +
+  scale_fill_gradient(low = "#c3d2e7",high = "#396ab1")+
+  #scale_fill_manual(name="",values=c("#008FD5","#FF2700"))+
+  mythememap+
+  geom_text_repel(aes(label = dollar(transfers2020),
+                      x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0,"cm"),fontface="bold",size=3) + 
+  labs(x="",y="",title="Federal Transfers to Provinces (Per Capita, 2020/21)",
+       subtitle="Source: Finance Canada, https://www.fin.gc.ca/fedprov/mtp-eng.asp.
+Graph by @trevortombe.")
+ggsave("plot.png",width=7,height=4,dpi=300)
